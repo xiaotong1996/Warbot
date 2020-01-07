@@ -103,10 +103,51 @@ to red-team-shoot
   
 end
 
+to give-data  [agent c choice]
+   
+  if (agent != nobody) [
+    (
+      ifelse
+      choice = 0[
+        ask agent [ set mem0 c ]
+      ]
+      choice = 1[
+        ask agent [ set mem1 c ]
+      ]
+      choice = 2[
+        ask agent [ set mem2 c ]
+      ]
+      choice = 3[
+        ask agent [ set mem3 c ]
+      ]
+      choice = 4[
+        ask agent [ set mem4 c ]
+      ]
+      choice = 5[
+        ask agent [ set mem5 c ]
+      ]
+      choice = 10
+      [
+        ask agent [ set mem10 c ]
+      ]
+      
+    )
+
+    
+  ]
+  
+end
+;;
+;; mem3 x of enemy's base
+;; mem4 y of enemy's base
+;; mem5 0 free 2 携带敌人base信息  
 to goRedExplorer
-  red-team-go-and-eat
+ 
+  ;; if explorer is free now, we detect if there is enemy's base near it
+  ;; if we find enemy's base we set     mem5  =  2 (enemy's base found)
   if(mem5 = 0)
   [
+     red-team-go-and-eat
     let b min-one-of perceive-base ennemy [ distance myself ]
     if(b != nobody)
     [
@@ -116,24 +157,24 @@ to goRedExplorer
      
     ]
   ]
+  
+  ;; if this explorer find enemy's base, then go home tell our base
   if(mem5 = 2)
   [
     
     let a min-one-of perceive-base color [ distance myself ]
-    ;; 是否回家
-    ifelse(a != nobody and (distance a <= 2))
+    ifelse(a != nobody)
     [
-      set mem5 0
-       
+     ;; ask a [set [mem3] of a mem3 ]
+      give-data a mem3 3
+      give-data a mem4 4
+      give-data a mem10 1
+      set mem5  0
     ]
     [
       red-team-go-back-to-base
-    ]
+    ]  
   ]
-  
-  
-  
-  
 end
 
 to goRedRocketLauncher
@@ -191,7 +232,14 @@ to goRedHarvester
   ]
 end
 
+
+;;
+;; mem3  x of enemy's base
+;; mem4  y of enemy's base
+;; mem10  if we find enemy's base 
+;;
 to goRedBase
+  ;; update number of haverst explorers launchers, missile and rocket
   ifelse (mem6 > 0) [ new-Harvester self set mem6 mem6 - 1 ]
   [ ifelse (mem7 > 0) [ new-RocketLauncher self set mem7 mem7 - 1 ]
   [ if (mem8 > 0) [ new-Explorer self set mem8 mem8 - 1 ]]]
@@ -203,38 +251,38 @@ to goRedBase
   [
     ifelse (random 2 = 0)[ set mem6 mem6 + 1 ][ set mem8 mem8 + 1 ]
   ]
-  ;; crée un nouveau robot si il reste des demandes de création dans le pipe (mem6, mem7 ou mem8)
   
+  ;; if there are more then 2 ennemies, we build a rocket launchers
   if((count perceive-robots ennemy > 2) and energy > 20000 )
   [
     set mem7 mem7 + 1
   ]
   
-  ;;传输据
-  let h min-one-of perceive-specific-robots color Explorers [ distance self]
-  if(h != nobody)
-  [
-    if([mem3] of h != 0)
-    [
-      set mem3 [mem3] of h
-      set mem4 [mem4] of h
-      set mem10 1 ;; 已得到base坐标
-    ]
-    
-  ]
-
-  ;; TODO 传输据给导弹
+  
+  ;; if enemy's rocketlaunchers near our base, we shoot a faf
   let t one-of perceive-specific-robots ennemy rocketlaunchers
   if (t != nobody) [
     ;; regarde s'il y a des robots amis en direction de la cible potentielle t avant de tirer
     if (not any? perceive-robots-in-cone color towards t) [ launch-faf t ]
   ]
   
+  ;; if any enemy near our base, we shoot a regular bullet
   let k one-of perceive-specific-robots ennemy explorers
   if (k != nobody) [
     
     if (not any? perceive-robots-in-cone color towards k) [ launch-rocket towardsxy ([xcor] of k)  ([ycor] of k)]
   ]
+  
+  ;; if the nearest robot know the cor of enemy's base, we note it
+ 
+  
+  ;; if we know the enemy's base and we have enough energy, we build a lot rocket launchers
+  if(mem10 = 1 and energy > 50000)
+  [
+     set mem7 mem7 + 5
+  ]
+
+  
 end
 
 ;; procedure pour initialiser les explorers rouges
