@@ -1,0 +1,258 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; le code de l'equipe rouge basique
+;; préfixe : red-team
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to red-team-ask-for-energy [ b n ]
+  ask b [ if (energy > 6000) [ give-energy myself n ]]
+end
+
+to red-team-go-back-to-base
+  if (carrying-food? > 1000) or (energy < 500) or ((Breed = RocketLaunchers) and (nb-missiles = 0))
+  [
+    let b min-one-of my-bases [ distance myself ]
+    if (b != nobody) [
+      ifelse (distance b <= 2)
+      [ 
+        if (carrying-food? > 1000) [ give-food b carrying-food? ]
+        if (energy < 500) [ red-team-ask-for-energy b 500 ]
+        if ((Breed = RocketLaunchers) and (nb-missiles = 0)) [
+          red-team-ask-for-energy b 500
+          new-missile 5
+        ]
+      ]
+      [
+        set heading towards b - 20 + random 40
+        if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
+        forward-move speed
+      ]
+    ]    
+  ]
+end
+
+to red-team-go-and-eat
+  if ((breed = RocketLaunchers and (mem5 = 0)) or (breed = Explorers)) [
+    random-move
+  ]
+end
+
+to red-team-harvesters-go-and-eat
+  let b min-one-of perceive-food [ distance self ]
+  ifelse (b != nobody) [ 
+    ifelse (distance b) <= 2
+      [ take-food b ]
+      [ set heading towards b - 20 + random 40
+        if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
+        forward-move speed
+      ]
+  ]
+  [ random-move ]
+end
+
+to-report red-team-no-target?
+  report mem5 = 0
+end
+
+to red-team-set-target [ x y espece ]
+  set mem0 x set mem1 y set mem2 espece set mem5 1
+end
+
+to red-team-call-rocket-launcher [ x y espece ]
+  let rl min-one-of perceive-specific-robots color RocketLaunchers [ distancexy x y ]
+  if (rl != nobody) [ ask rl [ red-team-set-target x y espece ]]
+end
+
+to red-team-call-explorer [ x y espece ]
+  let ex one-of perceive-specific-robots color Explorers
+  if (ex != nobody) [
+    ask ex [
+      set mem0 x 
+      set mem1 y
+      set mem2 espece
+      set mem5 1
+    ]
+  ]
+end
+
+to red-team-select-target
+  if (red-team-no-target?)
+  [
+    let h min-one-of perceive-robots ennemy [ distance myself ]
+    ifelse ( h != nobody ) [
+      set mem0 [xcor] of h
+      set mem1 [ycor] of h
+      set mem2 [breed] of h
+      set mem5 1
+    ]
+    [ set mem5 0 ]
+  ]
+end
+
+to red-team-shoot 
+  if (not red-team-no-target?) 
+  [
+    ifelse (distancexy mem0 mem1 < detection-range)
+    [ launch-rocket towardsxy mem0 mem1 set mem5 0]
+    [ set heading towardsxy mem0 mem1 - 20 + random 40
+      if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
+      forward-move speed
+    ]
+  ]
+  
+end
+
+to goRedExplorer
+  red-team-go-and-eat
+  if(mem5 = 0)
+  [
+    let b min-one-of perceive-base ennemy [ distance myself ]
+    if(b != nobody)
+    [
+      set mem3 [xcor] of b
+      set mem4 [ycor] of b
+      set mem5 2
+     
+    ]
+  ]
+  if(mem5 = 2)
+  [
+    
+    let a min-one-of perceive-base color [ distance myself ]
+    ;; 是否回家
+    ifelse(a != nobody and (distance a <= 2))
+    [
+      set mem5 0
+       
+    ]
+    [
+      red-team-go-back-to-base
+    ]
+  ]
+  
+  
+  
+  
+end
+
+to goRedRocketLauncher
+  ;  ifelse (carrying-food? > 1000) or (energy < 500) or ((Breed = RocketLaunchers) and (nb-missiles = 0))
+  ifelse (energy < 1000) or (nb-missiles = 0)
+  [
+    ;; rentre à la base si certaines conditions sont vérifiées
+    red-team-go-back-to-base
+  ]
+  [
+    ;; sinon sélectionne une cible
+    red-team-select-target
+    ifelse (red-team-no-target?)
+    ;; si pas de cible, cherche à manger
+    [ red-team-go-and-eat ]
+    ;; sinon tire
+    [ red-team-shoot ]
+  ]
+  
+  ;; crée un nouveau missile si plus de 3000 unités d'énergie
+  if ((energy > 3000) and (nb-missiles < 5)) [ new-missile 1 ]
+end
+
+to goRedHarvester
+    let f min-one-of perceive-food [ distance myself ]
+  while [(f != nobody) and (distance f <= 2)] [
+    take-food f
+    set f min-one-of perceive-food [ distance myself ]
+  ]
+
+  ifelse (mem4 = 1) or (carrying-food? > 500) or (energy < 100)
+  [
+    ; retour à la base
+    set mem4 1
+    ;;show energy
+    ;;show carrying-food?
+    ;; rentre à la base si certaines conditions sont vérifiées
+    red-team-go-back-to-base
+    if (energy > 100) and (carrying-food? > 100) [ 
+      ;; détermine la distance de la base la plus proche
+      let b min-one-of my-bases [ distance myself ]
+      if (b != nobody) [
+        ;; si le robot est à moins de 10 de la base
+        if (distance b < 10)
+          [ 
+            ;;show 100000000000000
+            plant-seeds color max-seeds
+        ]
+      ]
+    ]
+  ]
+  [
+    ;; cherche à manger
+    red-team-harvesters-go-and-eat
+  ]
+end
+
+to goRedBase
+  ifelse (mem6 > 0) [ new-Harvester self set mem6 mem6 - 1 ]
+  [ ifelse (mem7 > 0) [ new-RocketLauncher self set mem7 mem7 - 1 ]
+  [ if (mem8 > 0) [ new-Explorer self set mem8 mem8 - 1 ]]]
+  
+  if (nb-missiles < 10) and (energy > 1000) [ new-missile 40 ]
+  if (nb-fafs < 10) and (energy > 1000) [ new-faf 10 ]
+  
+  if(energy > 30000)
+  [
+    ifelse (random 2 = 0)[ set mem6 mem6 + 1 ][ set mem8 mem8 + 1 ]
+  ]
+  ;; crée un nouveau robot si il reste des demandes de création dans le pipe (mem6, mem7 ou mem8)
+  
+  if((count perceive-robots ennemy > 2) and energy > 20000 )
+  [
+    set mem7 mem7 + 1
+  ]
+  
+  ;;传输据
+  let h min-one-of perceive-specific-robots color Explorers [ distance self]
+  if(h != nobody)
+  [
+    if([mem3] of h != 0)
+    [
+      set mem3 [mem3] of h
+      set mem4 [mem4] of h
+      set mem10 1 ;; 已得到base坐标
+    ]
+    
+  ]
+
+  ;; TODO 传输据给导弹
+  let t one-of perceive-specific-robots ennemy rocketlaunchers
+  if (t != nobody) [
+    ;; regarde s'il y a des robots amis en direction de la cible potentielle t avant de tirer
+    if (not any? perceive-robots-in-cone color towards t) [ launch-faf t ]
+  ]
+  
+  let k one-of perceive-specific-robots ennemy explorers
+  if (k != nobody) [
+    
+    if (not any? perceive-robots-in-cone color towards k) [ launch-rocket towardsxy ([xcor] of k)  ([ycor] of k)]
+  ]
+end
+
+;; procedure pour initialiser les explorers rouges
+to initRedExplorer
+end
+
+;; procedure pour initialiser les rocket-launchers rouges
+to initRedRocketLauncher
+end
+
+;; procedure pour initialiser les rocket-launchers rouges
+to initRedHarvester
+  plant-seeds color max-seeds
+end
+
+;; procedure pour initialiser les bases rouges
+to initRedBase
+   new-Harvester self
+
+  set mem6 7
+end
