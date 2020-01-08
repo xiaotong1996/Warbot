@@ -108,7 +108,7 @@ to bilibili-go-to-base
    
     let b min-one-of my-bases [ distance myself ]
     if (b != nobody) [
-      
+    
         set heading towards b - 20 + random 40
         if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
         forward-move speed
@@ -152,10 +152,59 @@ to bilibili-give-data  [agent c choice]
   ]
   
 end
+
+;; for calling harvest
+to-report bilibili-no-target?
+  report mem5 = 0
+end
+
+to bilibili-set-food-target [x y]
+  if(bilibili-no-target?) [ set mem0 x set mem1 y set mem5 1 ] 
+end
+
+to bilibili-call-harvester [x y]
+  let h min-one-of perceive-specific-robots color harvesters [ distancexy x y ]
+  if (h != nobody) [ ask h [ bilibili-set-food-target x y ]]
+  
+end
+  
+to bilibili-harvesters-go-and-eat
+  
+  ifelse(bilibili-no-target?)
+  [
+    let b min-one-of perceive-food [ distance self ]
+    ifelse (b != nobody) [ 
+      ifelse (distance b) <= 2
+      [ take-food b ]
+      [ set heading towards b - 20 + random 40
+        if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
+        forward-move speed
+      ]
+    ]
+    [ random-move ]
+  ]
+  [
+    ifelse (mem5 = 1)
+    [ 
+      ifelse (distancexy mem0 mem1 > 1)
+      [
+        set heading towardsxy mem0 mem1
+        ifelse (free-ahead? speed = nobody) [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
+      ]
+      [ set mem5 0 ]
+    ]
+    [
+      random-move
+    ]
+  ]
+  
+end
+  
+
 ;;
-;; mem3 x of enemy's base
-;; mem4 y of enemy's base
-;; mem5 0 free 2 携带敌人base信息  
+;; mem3 x y of first enemy's base
+;; mem4 x y of second enemy's base
+;; mem5 0 free 2 携带敌人base信息  3 所有base都找到 随机移动 
 to goRedExplorer
  
   ;; if explorer is free now, we detect if there is enemy's base near it
@@ -166,9 +215,22 @@ to goRedExplorer
     let b min-one-of perceive-base ennemy [ distance myself ]
     if(b != nobody)
     [
-      set mem3 [xcor] of b
-      set mem4 [ycor] of b
-      set mem5 2
+      let x [xcor] of b
+      let y [ycor] of b
+      let my-list (list x y)
+      ifelse(length mem3 = 0)
+      [
+        set mem3 my-list
+        set mem5 2
+      ]
+      [
+        if(mem3 != my-list)
+        [
+          set mem4 my-list
+          set mem5 2
+        ]
+
+      ]
      
     ]
   ]
@@ -177,15 +239,19 @@ to goRedExplorer
   if(mem5 = 2)
   [
     
-    let a min-one-of my-bases  [ distance myself ]
-    ifelse(a != nobody)
+    let a min-one-of perceive-base color   [ distance myself ]
+    ifelse(a != nobody and distance a <= 2)
     [
-      if(distance a <= 2)[
-     ;; ask a [set [mem3] of a mem3 ]
-      bilibili-give-data a mem3 3
-      bilibili-give-data a mem4 4
-      bilibili-give-data a mem10 1
-      set mem5  0
+      ifelse(length mem4 = 0)
+      [
+        bilibili-give-data a mem3 3
+        bilibili-give-data a 1 10
+        set mem5 0
+      ]
+      [
+        bilibili-give-data a mem4 4
+        bilibili-give-data a 2 10
+        set mem5 3
       ]
     ]
     [
@@ -193,8 +259,34 @@ to goRedExplorer
     ]  
   ]
   
+  if(mem5 = 3)
+  [
+    red-team-go-and-eat
+  ]
+  
+  ;; if no energy then go home
+  if(energy < 100)
+  [
+    bilibili-go-to-base
+    let a min-one-of perceive-base color   [ distance myself ]
+    if(a != nobody and distance a <= 2)
+    [
+       red-team-ask-for-energy a 300 
+    ]
+  ]
+  
+  ;;if we find food we call Harvester
+  let food one-of perceive-food
+  if (food != nobody) [
+    
+    bilibili-call-harvester [xcor] of food [ycor] of food
+  ]
+  
+  
+  
+  
 end
-
+;;mem5 3 所有base信息都得知
 to goRedRocketLauncher
   ;  ifelse (carrying-food? > 1000) or (energy < 500) or ((Breed = RocketLaunchers) and (nb-missiles = 0))
   ifelse (energy < 1000) or (nb-missiles = 0)
@@ -216,7 +308,15 @@ to goRedRocketLauncher
   if ((energy > 3000) and (nb-missiles < 5)) [ new-missile 1 ]
 end
 
+
+
+;; mem5 0 free 1 收到食物位置信息   3 所有base信息都得知 
 to goRedHarvester
+  
+    bilibili-harvesters-go-and-eat
+    bilibili-call-explorer-help
+  
+  
     let f min-one-of perceive-food [ distance myself ]
   while [(f != nobody) and (distance f <= 2)] [
     take-food f
@@ -252,9 +352,9 @@ end
 
 
 ;;
-;; mem3  x of enemy's base
-;; mem4  y of enemy's base
-;; mem10  if we find enemy's base 
+;; mem3  first cor of enemy's base
+;; mem4  second cor of enemy's base
+;; mem10  0 没有找到 1 找到一个存到mem3， 2 找到两个
 ;;
 to goRedBase
   ;; update number of haverst explorers launchers, missile and rocket
@@ -285,8 +385,8 @@ to goRedBase
   ]
   
   ;; if any enemy near our base, we shoot a regular bullet
-  let k one-of perceive-specific-robots ennemy explorers
-  if (k != nobody) [
+  let k one-of perceive-robots ennemy
+  if (k != nobody ) [
     
     if (not any? perceive-robots-in-cone color towards k) [ launch-rocket towardsxy ([xcor] of k)  ([ycor] of k)]
   ]
@@ -299,6 +399,26 @@ to goRedBase
   [
      set mem7 mem7 + 5
   ]
+  
+  let my-robot perceive-robots color
+  if(my-robot != nobody )
+  [
+    if(mem10 = 1)
+    [
+     
+        bilibili-give-data my-robot mem3 3
+       
+    ]
+    
+    if(mem10 = 2 and ([mem5] of my-robot !=3))
+    [
+      bilibili-give-data my-robot mem3 3
+      bilibili-give-data my-robot mem4 4
+      bilibili-give-data my-robot 3 5
+    ]
+  ]
+ 
+  
 
   
 end
