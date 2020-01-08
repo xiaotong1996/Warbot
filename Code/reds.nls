@@ -112,8 +112,8 @@ to bilibili-go-to-base
         set heading towards b - 20 + random 40
         if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
         forward-move speed
-      
     ]     
+  
 end
 
 to bilibili-give-data  [agent c choice]
@@ -173,7 +173,10 @@ to bilibili-harvesters-go-and-eat
     let b min-one-of perceive-food [ distance self ]
     ifelse (b != nobody) [ 
       ifelse (distance b) <= 2
-      [ take-food b ]
+      [ 
+        take-food b 
+        rt 180
+      ]
       [ set heading towards b - 20 + random 40
         if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
         forward-move speed
@@ -222,14 +225,14 @@ to goRedExplorer
       ifelse( mem3 = 0)
       [
         set mem3 my-list
-        set mem2 = 1
+        set mem2  1
         set mem5 2
       ]
       [
         if(mem3 != my-list)
         [
           set mem4 my-list
-          set mem2 = 2
+          set mem2 2
           set mem5 2
         ]
 
@@ -260,6 +263,8 @@ to goRedExplorer
         set mem2 2
         set mem5 0
       ]
+      
+      rt 180
     ]
     [
       bilibili-go-to-base
@@ -279,6 +284,7 @@ to goRedExplorer
     if(a != nobody and distance a <= 2)
     [
        red-team-ask-for-energy a 300 
+       rt 180
     ]
   ]
   
@@ -353,9 +359,10 @@ end
 
 to bilibili-call-explorer-help
  
-  let t one-of perceive-specific-robots color explorer
-  if(t!=nobody)
+   let t min-one-of perceive-specific-robots color explorers [ distance myself ]
+  if(t != nobody)
   [
+    
     if([mem5] of t = 0 or [mem5] of t = 3)
     [
       ask t [
@@ -364,26 +371,35 @@ to bilibili-call-explorer-help
         set mem5 1
       ]
     ]
+    
+    if(distance t <= 2)
+    [
+      give-food t (carrying-food? - 300)
+      rt 180
+    ]
   ]
   
 end
-;; mem5 0 free 1 收到食物位置信息   3 所有base信息都得知 
+;; mem5 0  1 有目标 。2 等待explorer 3 回家路上 4 种地
 to goRedHarvester
   
-  ifelse(carrying-food? > 500)
+  if(mem5 = 0)
   [
-      bilibili-call-explorer-help
+       bilibili-harvesters-go-and-eat
+        ifelse(carrying-food? > 500)
+      [
+         bilibili-call-explorer-help
+      ]
   ]
-  [ 
-      bilibili-harvesters-go-and-eat
-  ]
+ 
   
   
   
     let f min-one-of perceive-food [ distance myself ]
-  while [(f != nobody) and (distance f <= 2)] [
+    while [(f != nobody) and (distance f <= 2)] [
     take-food f
     set f min-one-of perceive-food [ distance myself ]
+    rt 180
   ]
 
   ifelse (mem4 = 1) or (carrying-food? > 500) or (energy < 100)
