@@ -359,8 +359,8 @@ end
 
 to bilibili-call-explorer-help
  
-   let t min-one-of perceive-specific-robots color explorers [ distance myself ]
-  if(t != nobody)
+  let t min-one-of perceive-specific-robots color explorers [ distance myself ]
+  ifelse(t != nobody)
   [
     
     if([mem5] of t = 0 or [mem5] of t = 3)
@@ -375,58 +375,48 @@ to bilibili-call-explorer-help
     if(distance t <= 2)
     [
       give-food t (carrying-food? - 300)
+      set mem5 4
       rt 180
     ]
   ]
+  [
+    set mem5 2
+    bilibili-go-to-base
+  ]
   
 end
-;; mem5 0  1 有目标 。2 等待explorer 3 回家路上 4 种地
+;; mem5 0  1 有目标 。3 到家 2 回家路上 4 种地 5 等待explor
 to goRedHarvester
   
-  if(mem5 = 0)
+  (ifelse
+  mem5 = 0
   [
        bilibili-harvesters-go-and-eat
-        ifelse(carrying-food? > 500)
+        if(carrying-food? > 500)
       [
-         bilibili-call-explorer-help
+        set mem5 5
+        
       ]
   ]
+  mem5 = 5 
+    [
+       bilibili-call-explorer-help
+    ]
+  mem5 = 4
+  [
+    plant-seeds color max-seeds
+    if(carrying-food?  = 0)
+    [
+         mem5 = 0
+        ;;bilibili-go-to-base
+    ]
+  ])
  
   
   
   
-    let f min-one-of perceive-food [ distance myself ]
-    while [(f != nobody) and (distance f <= 2)] [
-    take-food f
-    set f min-one-of perceive-food [ distance myself ]
-    rt 180
-  ]
-
-  ifelse (mem4 = 1) or (carrying-food? > 500) or (energy < 100)
-  [
-    ; retour à la base
-    set mem4 1
-    ;;show energy
-    ;;show carrying-food?
-    ;; rentre à la base si certaines conditions sont vérifiées
-    bilibili-go-to-base
-    if (energy > 100) and (carrying-food? > 100) [ 
-      ;; détermine la distance de la base la plus proche
-      let b min-one-of my-bases [ distance myself ]
-      if (b != nobody) [
-        ;; si le robot est à moins de 10 de la base
-        if (distance b < 10)
-          [ 
-            ;;show 100000000000000
-            plant-seeds color max-seeds
-        ]
-      ]
-    ]
-  ]
-  [
-    ;; cherche à manger
-    red-team-harvesters-go-and-eat
-  ]
+  
+   
 end
 
 
