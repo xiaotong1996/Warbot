@@ -200,6 +200,16 @@ to bilibili-harvesters-go-and-eat
   ]
   
 end
+
+to bilibili-go-help-harvest
+  ifelse (distancexy mem0 mem1 > 1)
+      [
+        set heading towardsxy mem0 mem1
+        ifelse (free-ahead? speed = nobody) [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
+      ]
+      [ set mem5 0 ]
+  
+end
   
 ;;TODO 改mem2
 ;; mem0
@@ -271,6 +281,10 @@ to goRedExplorer
     ]  
   ]
   
+  if(mem5 = 1)
+  [
+    bilibili-go-help-harvest
+  ]
 
   
   
@@ -363,7 +377,7 @@ to bilibili-call-explorer-help
   ifelse(t != nobody)
   [
     
-    if([mem5] of t = 0 or [mem5] of t = 3)
+    if([mem5] of t = 0)
     [
       ask t [
         set mem0 xcor
@@ -407,7 +421,7 @@ to goRedHarvester
     plant-seeds color max-seeds
     if(carrying-food?  = 0)
     [
-         mem5 = 0
+        set mem5  0
         ;;bilibili-go-to-base
     ]
   ])
