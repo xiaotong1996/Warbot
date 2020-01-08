@@ -113,9 +113,7 @@ to bilibili-go-to-base
         if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
         forward-move speed
       
-    ]    
-  
-  
+    ]     
 end
 
 to bilibili-give-data  [agent c choice]
@@ -200,16 +198,19 @@ to bilibili-harvesters-go-and-eat
   
 end
   
-
-;;
+;;TODO 改mem2
+;; mem0
+;; mem1
+;; mem2 0 无 信息 1 知道一个信息 2 知道所有信息
 ;; mem3 x y of first enemy's base
 ;; mem4 x y of second enemy's base
-;; mem5 0 free 2 携带敌人base信息  3 所有base都找到 随机移动 
+;; mem5 0 free 2 回家路上 。1 向目标移动
 to goRedExplorer
  
+  red-team-go-and-eat
   ;; if explorer is free now, we detect if there is enemy's base near it
   ;; if we find enemy's base we set     mem5  =  2 (enemy's base found)
-  if(mem5 = 0)
+  if(mem5 = 0 and mem2 != 2)
   [
     red-team-go-and-eat
     let b min-one-of perceive-base ennemy [ distance myself ]
@@ -218,15 +219,17 @@ to goRedExplorer
       let x [xcor] of b
       let y [ycor] of b
       let my-list (list x y)
-      ifelse(length mem3 = 0)
+      ifelse( mem3 = 0)
       [
         set mem3 my-list
+        set mem2 = 1
         set mem5 2
       ]
       [
         if(mem3 != my-list)
         [
           set mem4 my-list
+          set mem2 = 2
           set mem5 2
         ]
 
@@ -242,16 +245,20 @@ to goRedExplorer
     let a min-one-of perceive-base color   [ distance myself ]
     ifelse(a != nobody and distance a <= 2)
     [
-      ifelse(length mem4 = 0)
+      ifelse( mem4 = 0)
       [
-        bilibili-give-data a mem3 3
-        bilibili-give-data a 1 10
-        set mem5 0
+        if(length mem3 != 0)
+       [ 
+          bilibili-give-data a mem3 3
+          bilibili-give-data a 1 10
+          set mem5 0
+        ]
       ]
       [
         bilibili-give-data a mem4 4
         bilibili-give-data a 2 10
-        set mem5 3
+        set mem2 2
+        set mem5 0
       ]
     ]
     [
@@ -259,15 +266,15 @@ to goRedExplorer
     ]  
   ]
   
-  if(mem5 = 3)
-  [
-    red-team-go-and-eat
-  ]
+
+  
   
   ;; if no energy then go home
   if(energy < 100)
   [
+    ;;TODO
     bilibili-go-to-base
+    
     let a min-one-of perceive-base color   [ distance myself ]
     if(a != nobody and distance a <= 2)
     [
@@ -286,35 +293,91 @@ to goRedExplorer
   
   
 end
+
+;;
+;;
+;;
+;;mem5 3 所有base信息都得知
+to bilibili-go-to-enemy-base
+  set heading towards mem5 - 20 + random 40
+  if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
+  forward-move speed
+end
+
 ;;mem5 3 所有base信息都得知
 to goRedRocketLauncher
-  ;  ifelse (carrying-food? > 1000) or (energy < 500) or ((Breed = RocketLaunchers) and (nb-missiles = 0))
-  ifelse (energy < 1000) or (nb-missiles = 0)
+  if (energy < 1000) or (nb-missiles = 0)
   [
     ;; rentre à la base si certaines conditions sont vérifiées
     bilibili-go-to-base
   ]
+
+  ;  ifelse (carrying-food? > 1000) or (energy < 500) or ((Breed = RocketLaunchers) and (nb-missiles = 0))
+  ifelse(mem5 != 0)[
+    bilibili-go-to-enemy-base
+    
+    ;; if enemy's rocketlaunchers near our rocketlaunchers, we shoot a faf
+    let t one-of perceive-specific-robots ennemy rocketlaunchers
+    if (t != nobody) [
+      ;; regarde s'il y a des robots amis en direction de la cible potentielle t avant de tirer
+      if (not any? perceive-robots-in-cone color towards t) [ launch-faf t ]
+    ]
+    
+    ;; if any enemy near our base, we shoot a regular bullet
+    let k one-of perceive-robots ennemy
+    if (k != nobody ) [
+      if (not any? perceive-robots-in-cone color towards k) [ launch-rocket towardsxy ([xcor] of k)  ([ycor] of k)]
+    ]
+  ]
   [
-    ;; sinon sélectionne une cible
-    red-team-select-target
-    ifelse (red-team-no-target?)
-    ;; si pas de cible, cherche à manger
-    [ red-team-go-and-eat ]
-    ;; sinon tire
-    [ red-team-shoot ]
+    random-move
+    let t one-of perceive-specific-robots ennemy rocketlaunchers
+    if (t != nobody) [
+      ;; regarde s'il y a des robots amis en direction de la cible potentielle t avant de tirer
+      if (not any? perceive-robots-in-cone color towards t) [ launch-faf t ]
+    ]
+    
+    ;; if any enemy near our base, we shoot a regular bullet
+    let k one-of perceive-robots ennemy
+    if (k != nobody ) [
+      if (not any? perceive-robots-in-cone color towards k) [ launch-rocket towardsxy ([xcor] of k)  ([ycor] of k)]
+    ]
   ]
   
-  ;; crée un nouveau missile si plus de 3000 unités d'énergie
-  if ((energy > 3000) and (nb-missiles < 5)) [ new-missile 1 ]
+  if (nb-missiles < 5) and (energy > 3000) [ new-missile 1 ]
+  if (nb-fafs = 0) and (energy > 3000) [ new-faf 1 ]
+      
 end
 
 
 
+to bilibili-call-explorer-help
+ 
+  let t one-of perceive-specific-robots color explorer
+  if(t!=nobody)
+  [
+    if([mem5] of t = 0 or [mem5] of t = 3)
+    [
+      ask t [
+        set mem0 xcor
+        set mem1 ycor
+        set mem5 1
+      ]
+    ]
+  ]
+  
+end
 ;; mem5 0 free 1 收到食物位置信息   3 所有base信息都得知 
 to goRedHarvester
   
-    bilibili-harvesters-go-and-eat
-    bilibili-call-explorer-help
+  ifelse(carrying-food? > 500)
+  [
+      bilibili-call-explorer-help
+  ]
+  [ 
+      bilibili-harvesters-go-and-eat
+  ]
+  
   
   
     let f min-one-of perceive-food [ distance myself ]
@@ -407,14 +470,15 @@ to goRedBase
     [
      
         bilibili-give-data my-robot mem3 3
-       
+        
     ]
     
-    if(mem10 = 2 and ([mem5] of my-robot !=3))
+    if(mem10 = 2 and ([mem5] of my-robot != 3))
     [
       bilibili-give-data my-robot mem3 3
       bilibili-give-data my-robot mem4 4
-      bilibili-give-data my-robot 3 5
+      
+      bilibili-give-data my-robot 2 2
     ]
   ]
  
