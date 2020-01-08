@@ -26,7 +26,7 @@ to red-team-go-back-to-base
       [
         set heading towards b - 20 + random 40
         if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
-        forward-move speed
+        ifelse (free-ahead? speed = nobody)  [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
       ]
     ]    
   ]
@@ -45,7 +45,7 @@ to red-team-harvesters-go-and-eat
       [ take-food b ]
       [ set heading towards b - 20 + random 40
         if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
-        forward-move speed
+        ifelse (free-ahead? speed = nobody)  [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
       ]
   ]
   [ random-move ]
@@ -97,7 +97,7 @@ to red-team-shoot
     [ launch-rocket towardsxy mem0 mem1 set mem5 0]
     [ set heading towardsxy mem0 mem1 - 20 + random 40
       if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
-      forward-move speed
+      ifelse (free-ahead? speed = nobody)  [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
     ]
   ]
   
@@ -108,10 +108,16 @@ to bilibili-go-to-base
    
     let b min-one-of my-bases [ distance myself ]
     if (b != nobody) [
-    
+     
         set heading towards b - 20 + random 40
         if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
-        forward-move speed
+        ifelse (free-ahead? speed = nobody)  [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
+    
+    if(distance b <= 2 )
+    [
+      rt 180
+      set mem5 3
+    ]
     ]     
   
 end
@@ -179,7 +185,7 @@ to bilibili-harvesters-go-and-eat
       ]
       [ set heading towards b - 20 + random 40
         if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
-        forward-move speed
+        ifelse (free-ahead? speed = nobody)  [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
       ]
     ]
     [ random-move ]
@@ -321,7 +327,7 @@ end
 to bilibili-go-to-enemy-base
   set heading towards mem5 - 20 + random 40
   if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
-  forward-move speed
+  ifelse (free-ahead? speed = nobody)  [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
 end
 
 ;;mem5 3 所有base信息都得知
@@ -401,23 +407,58 @@ to bilibili-call-explorer-help
 end
 ;; mem5 0  1 有目标 。3 到家 2 回家路上 4 种地 5 等待explor
 to goRedHarvester
+
   
   (ifelse
   mem5 = 0
   [
-       bilibili-harvesters-go-and-eat
-        if(carrying-food? > 500)
+      ;;bilibili-harvesters-go-and-eat
+      let b min-one-of perceive-food [ distance self ]
+      ifelse (b != nobody) [ 
+      ifelse (distance b) <= 2
+      [ 
+        take-food b 
+      ]
+      [ set heading towards b - 20 + random 40
+        if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
+        ifelse (free-ahead? speed = nobody) [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
+      ]
+    ]
+    [ random-move ]
+      if(carrying-food? > 500)
       [
         set mem5 5
         
       ]
   ]
+  mem5 = 1
+  [
+      ifelse (distancexy mem0 mem1 > 1)
+      [
+        set heading towardsxy mem0 mem1
+        ifelse (free-ahead? speed = nobody) [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
+      ]
+      [ set mem5 0 ]
+  ]
+     mem5 = 2
+  [
+      bilibili-go-to-base
+  ]
+    mem5 = 3
+    [
+      let b min-one-of my-bases [ distance myself ]
+      if (b != nobody) [
+        give-food b ( carrying-food? * 0.75 )
+        set mem5 4    
+      ]
+    ]
   mem5 = 5 
     [
        bilibili-call-explorer-help
     ]
   mem5 = 4
-  [
+  [ 
+    ifelse (free-ahead? speed = nobody) [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
     plant-seeds color max-seeds
     if(carrying-food?  = 0)
     [
@@ -426,10 +467,6 @@ to goRedHarvester
     ]
   ])
  
-  
-  
-  
-  
    
 end
 
