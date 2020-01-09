@@ -225,7 +225,7 @@ end
 ;; mem4 x y of second enemy's base
 ;; mem5 0 free 2 回家路上 。1 向目标移动
 to goRedExplorer
-  show mem5
+  ;;show mem5
   red-team-go-and-eat
   ;; if explorer is free now, we detect if there is enemy's base near it
   ;; if we find enemy's base we set     mem5  =  2 (enemy's base found)
@@ -266,7 +266,7 @@ to goRedExplorer
     [
       ifelse( mem4 = 0)
       [
-        if(length mem3 != 0)
+        if( length mem3 != 0)
        [ 
           bilibili-give-data a mem3 3
           bilibili-give-data a 1 10
@@ -289,17 +289,17 @@ to goRedExplorer
   
   if(mem5 = 1)
   [
-    show 1
+    ;;show 1
     bilibili-go-help-harvest
     
   ]
   
   if(mem5 = 2)
   [
-    show 2
+    ;;show 2
       ifelse(carrying-food? > 0)
        [ 
-          show 3
+          ;;show 3
           bilibili-go-to-base
        ]
     [
@@ -309,7 +309,7 @@ to goRedExplorer
   
   if(mem5 = 3)
   [
-    show 3
+    ;;show 3
     let a min-one-of perceive-base color   [ distance myself ]
     if(a != nobody and distance a <= 2)
     [
@@ -375,7 +375,8 @@ to goRedRocketLauncher
     if(a != nobody and distance a <= 2)
     [
      
-       red-team-ask-for-energy a 500 
+       red-team-ask-for-energy a 1000 
+       new-missile 10
        rt 180
     ]
     
@@ -511,7 +512,7 @@ to goRedHarvester
     [
       let b min-one-of my-bases [ distance myself ]
       if (b != nobody) [
-        give-food b ( carrying-food? * 0.75 )
+        give-food b ( carrying-food? * 0.6 )
         set mem5 4    
       ]
     ]
@@ -548,9 +549,11 @@ to goRedBase
   if (nb-missiles < 10) and (energy > 1000) [ new-missile 40 ]
   if (nb-fafs < 10) and (energy > 1000) [ new-faf 10 ]
   
-  if(energy > 15000)
+  if(energy > 20000)
   [
-    ifelse (random 6 < 3)[ set mem6 mem6 + 1 ][ if(random 3 = 0)[set mem8 mem8 + 1 ]]
+    if (random 60 = 0)[ set mem6 mem6 + 1 ]
+    ;;if (mem8 = 0)[ set mem8 2 ]
+    ;;[ if(random 3 = 0)[set mem8 mem8 + 1 ]]
   ]
   
   ;; if there are more then 2 ennemies, we build a rocket launchers
@@ -559,6 +562,10 @@ to goRedBase
     set mem7 mem7 + 1
   ]
   
+  if(mem10 != 0 and energy > 20000)
+  [
+     set mem7 mem7 + 2
+  ]
   
   ;; if enemy's rocketlaunchers near our base, we shoot a faf
   let t one-of perceive-specific-robots ennemy rocketlaunchers
@@ -579,10 +586,7 @@ to goRedBase
  
   
   ;; if we know the enemy's base and we have enough energy, we build a lot rocket launchers
-  if(mem10 != 0 and energy > 25000)
-  [
-     set mem7 mem7 + 2
-  ]
+ 
   
   let my-robot perceive-robots color
   if(my-robot != nobody )
@@ -618,12 +622,13 @@ end
 
 ;; procedure pour initialiser les rocket-launchers rouges
 to initRedHarvester
-  plant-seeds color max-seeds
+  ;;plant-seeds color max-seeds
 end
 
 ;; procedure pour initialiser les bases rouges
 to initRedBase
-   new-Harvester self
+  ;;new-Harvester self
   ;;set mem7 2
   set mem6 7
+  set mem8 2
 end
