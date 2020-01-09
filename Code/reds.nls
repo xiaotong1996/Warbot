@@ -489,7 +489,7 @@ to goRedHarvester
       ]
     ]
     [ random-move ]
-      if(carrying-food? > 600)
+      if(carrying-food? > 500)
       [
         set mem5 5
         
@@ -512,7 +512,7 @@ to goRedHarvester
     [
       let b min-one-of my-bases [ distance myself ]
       if (b != nobody) [
-        give-food b ( carrying-food? * 0.6 )
+        give-food b ( carrying-food? * 0.65 )
         set mem5 4    
       ]
     ]
@@ -549,9 +549,9 @@ to goRedBase
   if (nb-missiles < 10) and (energy > 1000) [ new-missile 40 ]
   if (nb-fafs < 10) and (energy > 1000) [ new-faf 10 ]
   
-  if(energy > 20000)
+  if(energy > 15000)
   [
-    if (random 60 = 0)[ set mem6 mem6 + 1 ]
+    if (random 100 = 21)[ set mem6 mem6 + 1 ]
     ;;if (mem8 = 0)[ set mem8 2 ]
     ;;[ if(random 3 = 0)[set mem8 mem8 + 1 ]]
   ]
