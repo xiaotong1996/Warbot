@@ -260,32 +260,11 @@ to goRedExplorer
   ;; if this explorer find enemy's base, then go home tell our base
   if(mem5 = 2)
   [
-    
-    let a min-one-of perceive-base color   [ distance myself ]
-    ifelse(a != nobody and distance a <= 2)
-    [
-      ifelse( mem4 = 0)
-      [
-        if( length mem3 != 0)
-       [ 
-          bilibili-give-data a mem3 3
-          bilibili-give-data a 1 10
-          set mem5 0
-        ]
-      ]
-      [
-        bilibili-give-data a mem4 4
-        bilibili-give-data a 2 10
-        set mem2 2
-        set mem5 0
-      ]
-      
-      rt 180
-    ]
-    [
+   
       bilibili-go-to-base
-    ]  
+    
   ]
+  
   
   if(mem5 = 1)
   [
@@ -294,29 +273,70 @@ to goRedExplorer
     
   ]
   
-  if(mem5 = 2)
-  [
-    ;;show 2
-      ifelse(carrying-food? > 0)
-       [ 
-          ;;show 3
-          bilibili-go-to-base
-       ]
-    [
-      set mem5 0
-    ]
-  ]
   
   if(mem5 = 3)
   [
     ;;show 3
+    
+    
     let a min-one-of perceive-base color   [ distance myself ]
     if(a != nobody and distance a <= 2)
     [
       give-food a carrying-food? 
       rt 180
-      set mem5 0
+      
+      ifelse( mem4 = 0)
+      [
+        if(length mem3 != 0)
+       [ 
+          (ifelse
+            [mem10] of a = 0
+          [
+            bilibili-give-data a mem3 3
+            bilibili-give-data a 1 10
+          ]
+            [mem10] of a = 1
+            [
+              if(mem3 != [mem3] of a)
+              [
+                 bilibili-give-data a mem3 4
+                 bilibili-give-data a 2 10
+              ]
+            ]
+          )
+          
+          set mem5 0
+        ]
+      ]
+      [
+        (ifelse
+        [mem10] of a = 0
+        [
+          bilibili-give-data a mem4 4
+          bilibili-give-data a 2 10
+          set mem2 2
+          set mem5 0
+        ]
+         [mem10] of a = 1
+          [
+            if([mem3] of a = mem3)
+            [
+               bilibili-give-data a mem4 4
+               bilibili-give-data a 2 10
+            ]
+            if([mem3] of a = mem4)
+            [
+              bilibili-give-data a mem3 4
+              bilibili-give-data a 2 10
+            ]
+          ]
+        )
+      ]
+      
+      rt 180
     ]
+    
+    set mem5 0
   ]
 
   
@@ -549,13 +569,18 @@ to goRedBase
   if (nb-missiles < 10) and (energy > 1000) [ new-missile 40 ]
   if (nb-fafs < 10) and (energy > 1000) [ new-faf 10 ]
   
-  if(energy > 15000)
+  
+  
+  if(mem10 = 0 and energy > 15000)
   [
-    if (random 100 = 21)[ set mem6 mem6 + 1 ]
+    if (random 10 = 1)[ set mem6 mem6 + 1 ]
     ;;if (mem8 = 0)[ set mem8 2 ]
     ;;[ if(random 3 = 0)[set mem8 mem8 + 1 ]]
   ]
-  
+  if(mem10 != 0 and energy > 15000)
+  [
+    if(random 200 = 0) [set mem6 mem6 + 1]
+  ]
   ;; if there are more then 2 ennemies, we build a rocket launchers
   if((count perceive-robots ennemy > 2) and energy > 20000 )
   [
@@ -593,12 +618,12 @@ to goRedBase
   [
     if(mem10 = 1)
     [
-     
+      
         bilibili-give-data my-robot mem3 3
         
     ]
     
-    if(mem10 = 2 and ([mem5] of my-robot != 3))
+    if(mem10 = 2 and ([mem2] of my-robot != 2))
     [
       bilibili-give-data my-robot mem3 3
       bilibili-give-data my-robot mem4 4
@@ -608,7 +633,7 @@ to goRedBase
   ]
  
   
-
+show mem10
   
 end
 
