@@ -1186,10 +1186,10 @@ to go-perception
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-213
-10
-997
-346
+0
+0
+784
+336
 -1
 -1
 6.4132231405
@@ -1207,6 +1207,8 @@ GRAPHICS-WINDOW
 -25
 25
 0
+0
+1
 0
 1
 ticks
@@ -1890,7 +1892,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.1.1
+NetLogo 3D 6.1.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@

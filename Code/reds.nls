@@ -325,9 +325,16 @@ end
 ;;
 ;;mem5 3 所有base信息都得知
 to bilibili-go-to-enemy-base
-  set heading towards mem5 - 20 + random 40
-  if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
-  ifelse (free-ahead? speed = nobody)  [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
+  ifelse(mem3 != 0)[
+    set heading towardsxy (item 0 mem3) (item 1 mem3) - 20 + random 40
+    if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
+    ifelse (free-ahead? speed = nobody)  [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
+  ][if(mem4 != 0)[
+     set heading towardsxy (item 0 mem4) (item 1 mem4) - 20 + random 40
+    if count turtles in-cone 2 90 with [ (breed != Burgers) and (breed != Perceptions) ] != 1 [ rt random 90 ]
+    ifelse (free-ahead? speed = nobody)  [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
+  ]]
+    
 end
 
 ;;mem5 3 所有base信息都得知
@@ -339,24 +346,41 @@ to goRedRocketLauncher
   ]
 
   ;  ifelse (carrying-food? > 1000) or (energy < 500) or ((Breed = RocketLaunchers) and (nb-missiles = 0))
-  ifelse(mem5 != 0)[
+  ifelse(mem4 != 0 or mem3 != 0)[
     bilibili-go-to-enemy-base
+    
+    ;; if any enemy near our base, we shoot a regular bullet
+    let n one-of perceive-base ennemy
+    if (n != nobody ) [
+      ;;if (not any? perceive-robots-in-cone color towards n) [ 
+       ;; show 11111111111 
+        launch-rocket towardsxy ([xcor] of n)  ([ycor] of n)
+      ;;]
+    ]
+    
     
     ;; if enemy's rocketlaunchers near our rocketlaunchers, we shoot a faf
     let t one-of perceive-specific-robots ennemy rocketlaunchers
     if (t != nobody) [
+      ;;show 222
       ;; regarde s'il y a des robots amis en direction de la cible potentielle t avant de tirer
-      if (not any? perceive-robots-in-cone color towards t) [ launch-faf t ]
+      if (not any? perceive-robots-in-cone color towards t) [ 
+       ;; show 11111111111 
+        launch-faf t 
+      ]
     ]
     
     ;; if any enemy near our base, we shoot a regular bullet
     let k one-of perceive-robots ennemy
     if (k != nobody ) [
-      if (not any? perceive-robots-in-cone color towards k) [ launch-rocket towardsxy ([xcor] of k)  ([ycor] of k)]
+      if (not any? perceive-robots-in-cone color towards k) [ 
+       ;; show 11111111111 
+        launch-rocket towardsxy ([xcor] of k)  ([ycor] of k)
+      ]
     ]
   ]
   [
-    random-move
+    ;;random-move
     let t one-of perceive-specific-robots ennemy rocketlaunchers
     if (t != nobody) [
       ;; regarde s'il y a des robots amis en direction de la cible potentielle t avant de tirer
@@ -433,7 +457,7 @@ to goRedHarvester
   ]
   mem5 = 1
   [
-      ifelse (distancexy mem0 mem1 > 1)
+      ifelse (distancexy mem0 mem1 > 2)
       [
         set heading towardsxy mem0 mem1
         ifelse (free-ahead? speed = nobody) [ forward-move speed ][ rt random 360 if (free-ahead? 2 = nobody) [ forward-move speed ]]
@@ -500,6 +524,7 @@ to goRedBase
   ;; if enemy's rocketlaunchers near our base, we shoot a faf
   let t one-of perceive-specific-robots ennemy rocketlaunchers
   if (t != nobody) [
+    ;;show 33333
     ;; regarde s'il y a des robots amis en direction de la cible potentielle t avant de tirer
     if (not any? perceive-robots-in-cone color towards t) [ launch-faf t ]
   ]
